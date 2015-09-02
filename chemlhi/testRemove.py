@@ -1,6 +1,12 @@
 from Remove import *
 
-dep = '[1(1-4)&2(1-40|100-120)&3(1)]'
+dep = '[1(1-4)&2(1-40|100-120|404)&3(1)]'
+dep2 = '[1(1-2|4)&2(1-40|105-120|404)&3(1-5)]'
+print dep
+print dep2
+print Intersection(dep, dep2)
+
+
 level = '2'
 a2 = '105'
 a3 = '120'

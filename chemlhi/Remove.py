@@ -28,6 +28,9 @@ NOTE : This could all probably be implemented in regular expressions in about 10
 We've got about 200 lines of code here, and about 100 lines of documentation.
 """
 import sys
+from collections import Counter
+from itertools import groupby 
+from operator import itemgetter
 
 def SplitString(s):
 	"""
@@ -306,3 +309,95 @@ def RemoveSubset(s, level, a2, a3):
 			sys.exit('Error! Subset not found in the provided dependency string.')
 		s = ''.join(new_s)
 		return s
+
+def Intersection(dependency1, dependency2): # This function is symmetrical!
+	''' Return the intersection string of dependency1 and dependency2 '''
+	dep1 = SplitString(dependency1)
+	dep2 = SplitString(dependency2)
+	n = Counter(dep1)['(']
+	m = Counter(dep2)['('] # the number of levels is equal to the number of parentheses.
+	assert n == m
+	#Convert the ranges in parentheses
+	
+	start_indices1 = [i for i, x in enumerate(dep1) if x == '(']
+	end_indices1   = [i for i, x in enumerate(dep1) if x == ')']		
+	start_indices2 = [i for i, x in enumerate(dep2) if x == '(']
+	end_indices2   = [i for i, x in enumerate(dep2) if x == ')']
+	levels = [dep1[i-1] for i in start_indices1]
+	assert len(start_indices1) == len(start_indices2)
+	assert len(end_indices1) == len(end_indices2)
+	# For every set of parentheses 
+	Intersections = []
+	for i in range(n):
+		range_1 = dep1[start_indices1[i]+1:end_indices1[i]]
+		range_2 = dep2[start_indices2[i]+1:end_indices2[i]] # we don't include the parens in these slices
+		dont_convert = [',', '-', '|']
+		#print 'range_2', range_2
+		range_1 = [int(i) if i not in dont_convert else i for i in range_1 ]
+		range_2 = [int(i) if i not in dont_convert else i for i in range_2 ]
+		loc_of_bar1 = [i for i, x in enumerate(range_1) if x == '|']
+		loc_of_bar2 = [i for i, x in enumerate(range_2) if x == '|'] # now we know where the bars are
+		# either there are bars, or there are not.
+		Intersections.append(do_intersect(range_1, range_2, loc_of_bar1, loc_of_bar2))
+	Intersections = finalize_intersect(Intersections, levels)
+	return Intersections
+
+def do_intersect(range_1, range_2, loc_of_bar1, loc_of_bar2):
+	'''Input is two ranges of values separated with bars and dashes. We have to translate these strings 
+	into sets of integers. Then return a set containing the common integers, nicely formatted'''
+	ints_1 = set(expand(range_1, loc_of_bar1))
+	ints_2 = set(expand(range_2, loc_of_bar2))
+	intersect_set = ints_1 & ints_2
+	return format_intersect(intersect_set)
+
+def expand(range_N, loc_of_barN):
+	'''input the range and the locations of the bars. Then transform the range into a set of integers '''
+	expansion = set()
+	#print 'range_N', range_N
+	if loc_of_barN == []:
+		if len(range_N) == 1:
+			expansion.add(range_N[0])
+		else:
+			for i in range(range_N[0], range_N[2] + 1):
+				expansion.add(i)
+	else:
+		start_bars = [-1] + loc_of_barN
+		end_bars = loc_of_barN + [len(range_N)]
+		for i in range(len(start_bars)):
+			range_n = range_N[start_bars[i]+1:end_bars[i]]
+			if len(range_n) == 1:
+				expansion.add(range_n[0])
+			else:
+				#print 'range_n[0], range_n[2] + 1', range_n[0], range_n[2] + 1
+				for i in range(range_n[0], range_n[2] + 1):
+					expansion.add(i)
+	return list(expansion)
+
+def format_intersect(intersect_set):
+	'''input a set of integers, output the set packaged in parentheses with bars and dashes as it should be. '''
+	l_intersect_set = list(intersect_set)
+	ranges = []
+	for k,g in groupby(enumerate(l_intersect_set), lambda (i,x):i-x):
+		ranges.append(map(itemgetter(1), g))
+	transformed_ranges = []
+	for r in ranges:
+		if len(r) == 1:
+			transformed_ranges.append(str(r[0]))
+		else:
+			transformed_ranges.append(''.join([str(r[0]), '-', str(r[-1])]))
+	return '|'.join(transformed_ranges)
+
+
+def finalize_intersect(Intersections, levels): 
+	result = []
+	for i, lev in enumerate(levels):
+		result.append(lev + '(' + Intersections[i] + ')')
+	return '[' + '&'.join(result) + ']'
+
+def gen_new_levels(Intersection, Current):
+	'''remove the intersection from the current distribution and return the new distributions'''
+	# Anything between a '[' or a '&' and a '(' is a level number.
+	# anything between '(' and ')'  in a  nongreedy regex is a set of level params.
+	# split the level params on '|'
+	# Difference = for param in level params if '-' in param RemoveSubset from level else Remove Element.
+	# 

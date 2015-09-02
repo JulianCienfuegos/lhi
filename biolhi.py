@@ -1,6 +1,7 @@
 import sys
 import copy
 import pprint
+import itertools
 
 def change_level(level_vals, new):
 	'''Input is a copy of the dep_dist strings for a given level and a new dep_dist string.'''
@@ -107,23 +108,69 @@ def diff(new, old):
 			deps.append(new_dep)
 	return deps
 
+def remove_dists(level_vals):
+	dependencies = [val.split(' ')[0] for val in level_vals]
+	return dependencies
 
-def verify_level(level_vals):
+def verify_level(dependencies):
 	''' this function gathers all of the distinct values present across all of the dependency strings. Then it
 	constructs the cartesian product, and for each element in the cartesian product, it verifies that this element
 	is in one of the dependency strings of the level. '''
+	# How many subsets in any entry in dependencies?
+	dep = dependencies[0]
+	dep_split = [i.split(',') for i in dep.split('-')]
+	n = len(dep_split)
+	distinct = [set() for i in range(n)]
+
+	# Gather all of the distinct values in the level.
+	for val in dependencies: # split the val into the different pieces.
+		dep_split = [i.split(',') for i in val.split('-')]
+		for i in range(len(dep_split)):
+			for d in dep_split[i]:
+				distinct[i].add(d)
+	distinct = [list(s) for s in distinct]
+	distinct = [sorted(s) for s in distinct]
+	#print distinct
+
+	# construct the cartesian product
+	cart_prod = []
+	for element in itertools.product(*distinct):
+		cart_prod.append(list(element))
+	cart_prod = ['-'.join(cp) for cp in cart_prod]
+	#pprint.pprint(cart_prod)
+	
+	#remove elements one by one from dependencies. We should be left with an empty list when we reach the end of the cart_prod
+	remaining = unshared_copy(dependencies)
+	
+	for cp in cart_prod:
+		cp = cp.split('-')
+		for i in remaining:
+			is_sub = 0
+			i_list = i.split('-')
+			i_list = [j.split(',') for j in i_list]
+			for j in range(len(i_list)):
+				if cp[j] in i_list[j]:
+					is_sub += 1
+			if is_sub == len(i_list):
+				#print 'cp, i_list', cp, i_list
+				break
+		if is_sub == 0:
+			print cp
+			sys.exit('There is an error in the level verification step.')
+
 
 if __name__ == '__main__':
 	level1 = '1,2-4,5-7,8,9,10 olddist1'
 	level2 = '1,2-6-7,8,9,10 olddist2'
 	level3 = '3-4,5,6-7,8,9 olddist3'
 	level4 = '3-4,5,6-10 olddist4'
-
 	level_vals = [level1, level2, level3, level4]
 
 	new_dist = '2,3-5,6-7,9,10 newdist'
 	change_level(level_vals, new_dist)
 	pprint.pprint(level_vals)
+	verify_level(remove_dists(level_vals))
+
 
 	level1 = '1,2,3,4 old1'
 	level2 = '5,6,7,8 old2'
@@ -132,3 +179,4 @@ if __name__ == '__main__':
 	new_dist = '4,9 new'
 	change_level(level_vals, new_dist)
 	pprint.pprint(level_vals)
+	verify_level(remove_dists(level_vals))

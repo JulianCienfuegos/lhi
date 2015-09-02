@@ -1,0 +1,56 @@
+README
+
+BioLhi script changing routines:
+separate_dep_dist
+intersect
+make_line
+unshared_copy
+diff
+change_line
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This is the code that will change a bio lhi file. The dependencies in a bio lhi file a a little bit more
+complicated than the dependencies in a chemical lhi file. These files specify a dependency as
+
+Level number
+*stuff*
+depends = level1*nodes1, level2*nodes2, ..., leveln, nodesn
+dep1 : distribution
+dep2 : distribution
+etc.
+
+The dep lines are in the format a,b,c,d-e,f,g,h - etc. where the a, b, etc. specify the nodes in the levels indicated in 'depends'. The troubles with this format are:
+	1. The dependency level and nodes are listed on different lines
+	2. The a, b, c, described above need not be consecutive (I'm not sure if they are ordered).
+	3. The dependency is split all the way to the last node. For example, a dependency string in level n specifies a 
+		distribution for the levels own nodes. In the chem lhi files, the end of a dependency string is always 
+		n(a-b) where a-b is the entire range of nodes in level n. In the bio file, we may have a different distribution
+		for different nodes within a terminal level.
+		For example, the chem files specify constant distributions if the probability of each node is a fixed number. 
+		In the bio file, this fixed number is specified as a delta for each of the nodes. 
+		Why is this complicated? It isn't complicated, but it is potentially dangerous. If we change one of the 
+		deltas, but forget to change the others, we may wind up with our probabilities not summing to one.
+
+	As of now, I am not planning on including error checking for the scenario described in bullet 3. That will 
+	come later.For now, I am going to allow the user to specify a distribution he or she wants to change, and then 
+	the code will like for a superset of the dependency string indicated. That is what will be changed regardless
+	of if it is statistically legal or not!
