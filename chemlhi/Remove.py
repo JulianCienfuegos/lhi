@@ -401,3 +401,8 @@ def gen_new_levels(Intersection, Current):
 	# split the level params on '|'
 	# Difference = for param in level params if '-' in param RemoveSubset from level else Remove Element.
 	# 
+
+
+def difference(level, intersection):
+	""" This function takes in the level and the values in the new dependency that 
+	intersect it."""
