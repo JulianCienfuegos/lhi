@@ -405,4 +405,5 @@ def gen_new_levels(Intersection, Current):
 
 def difference(level, intersection):
 	""" This function takes in the level and the values in the new dependency that 
-	intersect it."""
+	intersect it.
+	The return value is the string that has each level with the """

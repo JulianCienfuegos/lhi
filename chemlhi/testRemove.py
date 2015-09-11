@@ -22,3 +22,4 @@ a2 = '1'
 a3 = '3'
 s =  RemoveSubset(dep, level, a2, a3)
 print 's', s
+o
